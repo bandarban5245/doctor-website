@@ -1041,13 +1041,18 @@ table tbody tr:hover { background: #f8fafc; }
 <div class="toast" id="toast">✅ Saved!</div>
 
 <script>
-// ============ STORAGE ============
+// ============ STORAGE (Updated for Firebase) ============
 const DB = {
     get: (key, fallback) => {
         try { const v = localStorage.getItem('drRahman_' + key); return v ? JSON.parse(v) : fallback; }
         catch(e) { return fallback; }
     },
-    set: (key, val) => localStorage.setItem('drRahman_' + key, JSON.stringify(val)),
+    set: (key, val) => {
+        localStorage.setItem('drRahman_' + key, JSON.stringify(val));
+        if (window.saveToCloud) {
+            window.saveToCloud(key, val); // ক্লাউডে সেভ হবে
+        }
+    },
     del: (key) => localStorage.removeItem('drRahman_' + key)
 };
 
@@ -1662,5 +1667,47 @@ document.getElementById('currentDate').textContent = new Date().toLocaleDateStri
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
 });
 </script>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB-6VH_fJ5hitqXnaYSs9ci0VNfcYrrKQQ",
+      authDomain: "doctor-website-95c5b.firebaseapp.com",
+      projectId: "doctor-website-95c5b",
+      storageBucket: "doctor-website-95c5b.firebasestorage.app",
+      messagingSenderId: "1016067512251",
+      appId: "1:1016067512251:web:a58bb233e2796985d6169e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function saveToCloud(key, data) {
+        try {
+            await setDoc(doc(db, "clinic_data", key), { data: data });
+            console.log(key + " saved to Firebase!");
+        } catch (e) {
+            console.error("Error saving: ", e);
+        }
+    }
+
+    async function loadFromCloud(key) {
+        try {
+            const docSnap = await getDoc(doc(db, "clinic_data", key));
+            if (docSnap.exists()) {
+                return docSnap.data().data;
+            }
+        } catch (e) {
+            console.error("Error loading: ", e);
+        }
+        return null;
+    }
+
+    window.saveToCloud = saveToCloud;
+    window.loadFromCloud = loadFromCloud;
+  </script>
 </body>
 </html>
